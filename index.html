@@ -117,7 +117,13 @@
        points (stats + SP buttons). MultiPass needs CalendarViewer density.
 
        All rem values below are calibrated to 36px.
-       1rem = 36px. 0.5rem = 18px. Etc. */
+       1rem = 36px. 0.5rem = 18px. Etc.
+
+       STANDALONE NOTE: The GAS iframe wrapper applies its own viewport
+       scaling that effectively shrinks everything ~44%. On a standalone
+       page we compensate by scaling all mobile px values by 0.44.
+       This is done via a CSS transform on .page for mobile only,
+       applied by JS after device detection. */
     html, body {
       width: 100%;
       background: var(--bg);
@@ -125,6 +131,43 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       font-size: 36px;
     }
+
+    /* ── Standalone mobile overrides ─────────────────────────────────
+       GAS iframe wrapper applies its own viewport scaling that shrinks
+       content ~44%. Without that wrapper, the 36px base + 70px titles
+       are enormous on a phone. These overrides bring standalone mobile
+       in line with how the GAS version actually renders.
+       Scale factor: ~0.44 applied to all mobile px values. */
+    body.mobile.standalone { font-size: 16px; }
+    body.mobile.standalone .page { padding: 8px; }
+    body.mobile.standalone header { border-radius: 10px; padding: 10px 10px 8px; margin-bottom: 8px; }
+    body.mobile.standalone .title { font-size: 31px; }
+    body.mobile.standalone .subtitle { font-size: 35px; }
+    body.mobile.standalone .beta-pill { font-size: 11px; padding: 5px 10px; margin-top: 4px; }
+    body.mobile.standalone .header-status { font-size: 24px; }
+    body.mobile.standalone #searchForm { border-radius: 10px; padding: 10px 10px 10px 14px; margin-bottom: 8px; }
+    body.mobile.standalone #searchInput { font-size: 16px; }
+    body.mobile.standalone .search-btn { font-size: 12px; padding: 10px 18px; border-radius: 10px; }
+    body.mobile.standalone .search-instruction { font-size: 10px; }
+    body.mobile.standalone .qual-card { border-radius: 10px; padding: 10px; margin-bottom: 8px; }
+    body.mobile.standalone .register-btn { font-size: 14px; padding: 12px; border-radius: 999px; }
+    body.mobile.standalone .format-badge { font-size: 10px; padding: 4px 10px; border-radius: 6px; }
+    body.mobile.standalone .qual-date { font-size: 16px; }
+    body.mobile.standalone .qual-location { font-size: 13px; }
+    body.mobile.standalone .qual-time { font-size: 12px; }
+    body.mobile.standalone .eligibility-badge { font-size: 10px; padding: 3px 8px; }
+    body.mobile.standalone #welcomePill { font-size: 16px; padding: 10px 18px; border-radius: 999px; margin-bottom: 8px; }
+    body.mobile.standalone #contactBanner a { font-size: 14px; padding: 10px 18px; border-radius: 999px; }
+    body.mobile.standalone .reg-summary-bar { font-size: 14px; padding: 10px 14px; border-radius: 10px; }
+    body.mobile.standalone .section-divider { font-size: 11px; letter-spacing: 0.08em; }
+    body.mobile.standalone .modal-panel { padding: 16px 14px; border-radius: 14px; }
+    body.mobile.standalone .modal-title { font-size: 18px; }
+    body.mobile.standalone .modal-msg { font-size: 14px; }
+    body.mobile.standalone .modal-btn { font-size: 14px; padding: 12px; border-radius: 10px; }
+    body.mobile.standalone .eligibility-note { font-size: 11px; padding: 8px 12px; border-radius: 8px; }
+    body.mobile.standalone footer { font-size: 12px; }
+    body.mobile.standalone .not-found-card { font-size: 14px; padding: 14px; border-radius: 10px; }
+    body.mobile.standalone .ineligible-banner { font-size: 14px; padding: 12px; border-radius: 10px; }
 
     /* -- Page wrapper -----------------------------------------------------
        100vw width + 16px padding = CalendarViewer standard. PatchCheck uses
@@ -2875,6 +2918,12 @@
       }
 
       document.body.classList.add(deviceClass);
+
+      // Standalone mode: not inside GAS iframe. GAS iframe shrinks mobile
+      // content ~44% via its own viewport handling. We compensate with CSS
+      // transform for mobile only. Tablet/desktop px values are small enough
+      // to work without scaling.
+      document.body.classList.add('standalone');
     })();
   </script>
 </body>
