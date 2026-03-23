@@ -2139,11 +2139,11 @@
 
       var formatClass = q.format === '8' ? 'format-8' : 'format-9';
 
-      // On desktop/tablet, strip day name from dateDisplay since column
+      // On desktop, strip day name from dateDisplay since column
       // headers already show "SATURDAY" / "SUNDAY". "Saturday, March 21"
-      // becomes "March 21". On mobile, keep the full string.
-      var isDesktop = document.body.classList.contains('desktop') ||
-                      document.body.classList.contains('tablet');
+      // becomes "March 21". On mobile/tablet, keep the full string —
+      // cards stack vertically with no column headers for context.
+      var isDesktop = document.body.classList.contains('desktop');
       var displayDate = q.dateDisplay;
       if (isDesktop) {
         var commaPos = q.dateDisplay.indexOf(', ');
