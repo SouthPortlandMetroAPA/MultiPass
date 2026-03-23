@@ -155,6 +155,19 @@
       margin-left: calc((100vw - (100vw / 0.44)) / 2);
     }
 
+    /* ── Standalone tablet override ──────────────────────────────────
+       Same problem as mobile: GAS iframe shrinks tablet content, but
+       standalone runs in a real viewport. Tablet scale is larger than
+       mobile (0.55 vs 0.44) because tablets have more room.
+       Weekend-paired 2-column grid is disabled for tablet (JS change)
+       — cards stack vertically like mobile. */
+    body.tablet.standalone .page {
+      transform: scale(0.55);
+      transform-origin: top center;
+      width: calc(100vw / 0.55);
+      margin-left: calc((100vw - (100vw / 0.55)) / 2);
+    }
+
     /* -- Page wrapper -----------------------------------------------------
        100vw width + 16px padding = CalendarViewer standard. PatchCheck uses
        6px but MultiPass needs more breathing room at 36px base (same reason
@@ -2330,8 +2343,7 @@
       //
       // On mobile, just render cards sequentially (no pairing).
 
-      var isDesktopLayout = document.body.classList.contains('desktop') ||
-                            document.body.classList.contains('tablet');
+      var isDesktopLayout = document.body.classList.contains('desktop');
 
       if (isDesktopLayout) {
         // -- Column Headers --
