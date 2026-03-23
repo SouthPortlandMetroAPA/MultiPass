@@ -133,15 +133,23 @@
     }
 
     /* ── Standalone mobile override ──────────────────────────────────
-       GAS iframe wrapper applies its own viewport scaling that shrinks
-       content ~44%. Without that wrapper, the 36px base + 70px titles
-       are enormous on a phone. CSS zoom uniformly scales ALL px values
-       (font-size, padding, margin, border-radius, shadows, etc.) in
-       one rule — no need to override 50+ individual selectors.
-       Supported in all modern browsers (Chrome, Safari, Firefox 126+). */
+       GAS iframe shrinks content ~44% via its viewport wrapper. The
+       standalone page runs in a real viewport — no iframe, no shrink.
+       Instead of zoom:0.44 (which breaks mobile layout by shrinking
+       the .page element inside a full-width viewport, causing the
+       content to occupy only ~44% of the screen), we override the
+       base font-size from 36px to 16px (≈44% of 36px). Since all
+       mobile CSS uses rem, everything scales proportionally.
+
+       The 4 header elements that use hardcoded px values must also be
+       scaled manually: 70→31, 79→35, 24→11, 54→24. */
     body.mobile.standalone {
-      zoom: 0.44;
+      font-size: 16px;
     }
+    body.mobile.standalone .title { font-size: 31px; }
+    body.mobile.standalone .subtitle { font-size: 35px; }
+    body.mobile.standalone .beta-pill { font-size: 11px; }
+    body.mobile.standalone .header-status { font-size: 24px; }
 
     /* -- Page wrapper -----------------------------------------------------
        100vw width + 16px padding = CalendarViewer standard. PatchCheck uses
