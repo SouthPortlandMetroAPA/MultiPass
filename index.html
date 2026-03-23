@@ -141,15 +141,19 @@
        base font-size from 36px to 16px (≈44% of 36px). Since all
        mobile CSS uses rem, everything scales proportionally.
 
-       The 4 header elements that use hardcoded px values must also be
-       scaled manually: 70→31, 79→35, 24→11, 54→24. */
-    body.mobile.standalone {
-      font-size: 16px;
+       The fix: scale the .page container with transform: scale(0.44).
+       Unlike CSS zoom, transform doesn't affect layout flow — the
+       element occupies its pre-transform size in the document. We set
+       width to 100vw/0.44 so the scaled result fills the viewport.
+       transform-origin: top center keeps it centered and top-aligned.
+       This uniformly scales ALL values (px, rem, shadows, radii) just
+       like zoom did, without the viewport width bug. */
+    body.mobile.standalone .page {
+      transform: scale(0.44);
+      transform-origin: top center;
+      width: calc(100vw / 0.44);
+      margin-left: calc((100vw - (100vw / 0.44)) / 2);
     }
-    body.mobile.standalone .title { font-size: 31px; }
-    body.mobile.standalone .subtitle { font-size: 35px; }
-    body.mobile.standalone .beta-pill { font-size: 11px; }
-    body.mobile.standalone .header-status { font-size: 24px; }
 
     /* -- Page wrapper -----------------------------------------------------
        100vw width + 16px padding = CalendarViewer standard. PatchCheck uses
