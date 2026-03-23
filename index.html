@@ -1532,7 +1532,7 @@
 
   </style>
 </head>
-<body>
+<body style="visibility:hidden;">
 
   <!-- Page wrapper: 100vw + 6px padding = PatchCheck/SharpShooters standard -->
   <div class="page">
@@ -2835,6 +2835,7 @@
               + '<div style="font-size:1.75rem;font-weight:700;color:#0031a1;margin-bottom:24px;">Under Maintenance</div>'
               + '<div style="font-size:1rem;color:#888;line-height:1.6;">We\'re updating the system. Please check back shortly.</div>';
             document.body.appendChild(box);
+            document.body.style.visibility = 'visible';
             return; // Stop all further initialization
           }
         }
@@ -2842,6 +2843,9 @@
         // If maintenance check fails, let the site load normally
         // (fail-open — don't block users because the API is down)
       }
+
+      // Maintenance check passed — reveal the page
+      document.body.style.visibility = 'visible';
 
       var form = document.getElementById('searchForm');
       form.addEventListener('submit', function(e) {
