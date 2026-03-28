@@ -1299,9 +1299,15 @@
         select.appendChild(opt);
       }
 
-      // Restore previous selection if still valid
+      // Restore previous selection if still valid, then try localStorage
       if (previousValue) {
         select.value = previousValue;
+      }
+      if (!select.value) {
+        try {
+          var saved = localStorage.getItem('multipass_admin_lastQual');
+          if (saved) select.value = saved;
+        } catch(e) {}
       }
       if (!select.value && select.options.length > 0) {
         select.selectedIndex = 0;
@@ -1393,6 +1399,11 @@
       var container = document.getElementById('tableContainer');
       var select = document.getElementById('eventSelect');
       var selectedKey = select.value;
+
+      // Persist selected qualifier so it survives page reload
+      if (selectedKey) {
+        try { localStorage.setItem('multipass_admin_lastQual', selectedKey); } catch(e) {}
+      }
 
       if (!adminData || !adminData.qualifiers || !selectedKey) {
         container.innerHTML = '<div class="admin-empty">Select an event to view registrations.</div>';
