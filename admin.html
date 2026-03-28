@@ -426,7 +426,9 @@
     }
 
     /* Legacy paid (prePaid=yes but no method recorded) — amber outline
-       signals "paid under old system, tap the correct method to assign" */
+       signals "paid under old system, tap the correct method to assign".
+       PaymentMethod is now the source of truth for paid status; these rows
+       need a method assigned to be fully migrated. */
     .pay-btns.legacy-paid .pay-btn {
       background: #fff3cd;
       color: #856404;
@@ -1502,8 +1504,14 @@
         var sl = is8Ball ? (reg.sl8 || '\u2014') : (reg.sl9 || '\u2014');
 
         // Payment method buttons — 4 inline pills per row.
-        // The active method gets the 'active' class (green).
-        var paidMethod = (reg.prePaid === 'yes') ? (reg.paymentMethod || '') : '';
+        // PaymentMethod is the source of truth for paid status.
+        // If paymentMethod is set, the player is paid. No separate PrePaid check.
+        var paidMethod = reg.paymentMethod || '';
+
+        // Legacy case: prePaid="yes" but paymentMethod="" means paid under the
+        // old toggle system before payment method tracking was added.
+        // Show amber-outlined buttons so admin can assign the correct method.
+        var legacyPaid = (reg.prePaid === 'yes' && !paidMethod);
 
         // Eligibility circles
         var eligState = reg.eligibilityConfirmed || '';
@@ -1511,12 +1519,8 @@
         var escDate = esc(qual.dateDisplay);
         var escFmt  = esc(qual.format);
 
-        // Build 4 payment-method pill buttons.
-        // Legacy case: prePaid="yes" but paymentMethod="" means paid under the
-        // old toggle system before payment method tracking was added.
-        // Show amber-outlined buttons so admin can assign the correct method.
+        // Build 4 payment-method pill buttons
         var methods = ['Cash', 'CashApp', 'Venmo', 'PayPal'];
-        var legacyPaid = (reg.prePaid === 'yes' && !paidMethod);
         var payBtnsHtml = '<div class="pay-btns' + (legacyPaid ? ' legacy-paid' : '') + '">';
         for (var mi = 0; mi < methods.length; mi++) {
           var m = methods[mi];
@@ -1888,7 +1892,9 @@
           if (prevActive) prevActive.classList.add('active');
           alert('Payment toggle failed: ' + ((result && result.error) || 'Unknown error'));
         } else {
-          // Server confirmed — update local cache
+          // Server confirmed — update local cache.
+          // PaymentMethod is the source of truth for paid status.
+          // Also sync prePaid for backward compat with legacy code paths.
           updateCachedRegistration(memberNumber, qualDate, format, 'prePaid', result.newValue);
           updateCachedPaymentMethod(memberNumber, qualDate, format, result.paymentMethod || '');
 
@@ -2096,7 +2102,7 @@
 
       var headers = [
         'Event Date', 'Format', 'Location', 'Player Name', 'Member Number',
-        'Email', 'Phone', '8-Ball SL', '9-Ball SL', 'Paid',
+        'Email', 'Phone', '8-Ball SL', '9-Ball SL',
         'Payment Method', 'Eligibility Confirmed', 'Registered At'
       ];
 
@@ -2118,7 +2124,6 @@
             csvEscape(reg.phone),
             csvEscape(reg.sl8 || ''),
             csvEscape(reg.sl9 || ''),
-            csvEscape(reg.prePaid === 'yes' ? 'Yes' : ''),
             csvEscape(reg.paymentMethod || ''),
             csvEscape(reg.eligibilityConfirmed === 'yes' ? 'Yes' : ''),
             csvEscape(reg.registeredAt)
