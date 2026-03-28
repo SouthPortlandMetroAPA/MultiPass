@@ -1891,6 +1891,11 @@
           // Server confirmed — update local cache
           updateCachedRegistration(memberNumber, qualDate, format, 'prePaid', result.newValue);
           updateCachedPaymentMethod(memberNumber, qualDate, format, result.paymentMethod || '');
+
+          // Clear legacy-paid amber styling once a method is assigned
+          if (result.paymentMethod) {
+            btn.parentElement.classList.remove('legacy-paid');
+          }
         }
 
       } catch (err) {
