@@ -324,7 +324,7 @@
       width: 100%;
       border-collapse: collapse;
       font-size: 0.8125rem;
-      min-width: 500px;
+      min-width: 580px;
     }
 
     .reg-table th {
@@ -338,6 +338,35 @@
       text-align: left;
       border-bottom: 2px solid var(--border);
       white-space: nowrap;
+    }
+
+    /* -- Sortable column headers -- */
+    /* Clickable headers show a pointer cursor and a sort-direction arrow.
+       Ascending = ▲, descending = ▼. Inactive sortable headers show a
+       subtle ⇅ hint on hover. */
+    .reg-table th.sortable {
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+      padding-right: 18px;
+    }
+    .reg-table th.sortable:hover {
+      color: var(--text);
+    }
+    .reg-table th.sortable::after {
+      content: '⇅';
+      position: absolute;
+      right: 4px;
+      opacity: 0.3;
+      font-size: 0.6rem;
+    }
+    .reg-table th.sortable.sort-asc::after {
+      content: '▲';
+      opacity: 0.8;
+    }
+    .reg-table th.sortable.sort-desc::after {
+      content: '▼';
+      opacity: 0.8;
     }
 
     .reg-table td {
@@ -355,15 +384,26 @@
       font-weight: 700;
     }
 
-    /* -- Toggle buttons (Paid) -- */
-    .toggle-btn {
-      display: inline-block;
-      padding: 4px 12px;
+    /* -- Inline payment method buttons (Cash / CashApp / Venmo / PayPal) -- */
+    /* Each registration row shows 4 small pill buttons. The active method
+       is green; the rest are gray. Clicking a gray button marks paid with
+       that method. Clicking the active (green) button undoes the payment. */
+    .pay-btns {
+      display: flex;
+      gap: 4px;
+      flex-wrap: nowrap;
+    }
+
+    .pay-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 8px;
       border-radius: 999px;
       border: none;
-      font-size: 0.6875rem;
+      font-size: 0.625rem;
       font-weight: 800;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.03em;
       text-transform: uppercase;
       cursor: pointer;
       font-family: inherit;
@@ -371,19 +411,16 @@
       white-space: nowrap;
       min-height: 32px;
       min-width: 44px;
-    }
-
-    .toggle-btn.off {
       background: #e9ecef;
       color: #6c757d;
     }
 
-    .toggle-btn.on {
+    .pay-btn.active {
       background: #28a745;
       color: #fff;
     }
 
-    .toggle-btn:disabled {
+    .pay-btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
@@ -572,37 +609,8 @@
       border: 1px solid var(--border);
     }
 
-    /* -- Payment method modal grid -- */
-    .pay-method-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .pay-method-btn {
-      padding: 12px 0;
-      font-size: 0.9375rem;
-      font-weight: 700;
-      border: 2px solid var(--border);
-      border-radius: 999px;
-      background: var(--card);
-      color: var(--text);
-      cursor: pointer;
-      font-family: inherit;
-      transition: background 0.15s, border-color 0.15s;
-      min-height: 48px;
-    }
-
-    .pay-method-btn:hover {
-      border-color: var(--spm-accent);
-      background: #f0f4ff;
-    }
-
-    .pay-method-btn:active {
-      background: var(--bg);
-      border-color: var(--spm-accent);
-    }
+    /* Payment method modal grid REMOVED — replaced by inline .pay-btns
+       in each registration row. See .pay-btns / .pay-btn above. */
 
     /* -- Maintenance mode card -- */
     .maintenance-card {
@@ -1011,26 +1019,9 @@
       </div>
     </div>
 
-    <!-- ================================================================== -->
-    <!-- Payment Method Modal -->
-    <!-- ================================================================== -->
-    <div class="modal" id="payMethodModal">
-      <div class="modal-panel">
-        <div class="modal-title" id="payMethodTitle">Payment Method</div>
-        <div class="modal-message" id="payMethodMessage">How did they pay?</div>
-        <div class="pay-method-grid" id="payMethodGrid">
-          <button class="pay-method-btn" data-method="Cash" type="button">Cash</button>
-          <button class="pay-method-btn" data-method="Venmo" type="button">Venmo</button>
-          <button class="pay-method-btn" data-method="PayPal" type="button">PayPal</button>
-          <button class="pay-method-btn" data-method="CashApp" type="button">CashApp</button>
-          <button class="pay-method-btn" data-method="Zelle" type="button">Zelle</button>
-          <button class="pay-method-btn" data-method="Unknown" type="button">Unknown</button>
-        </div>
-        <div class="modal-actions">
-          <button class="modal-btn modal-btn-dismiss" id="payMethodCancel" type="button">Never Mind</button>
-        </div>
-      </div>
-    </div>
+    <!-- Payment Method Modal REMOVED — replaced by inline pay-method
+         buttons (Cash / CashApp / Venmo / PayPal) directly in each
+         registration row. See .pay-btns / .pay-btn CSS + handlePayBtn(). -->
 
     <!-- ================================================================== -->
     <!-- Qualifier Add/Edit Modal -->
@@ -1123,8 +1114,7 @@
     // -- Pending confirm callback --
     var pendingConfirm = null;
 
-    // -- Payment method modal callback --
-    var pendingPayMethod = null;
+    // pendingPayMethod REMOVED — inline buttons don't need a callback var.
 
 
     // ======================================================================
@@ -1198,24 +1188,9 @@
     }
 
 
-    // ======================================================================
-    // Payment Method Modal
-    // ======================================================================
-
-    /**
-     * Shows payment method selection modal. Selecting a method calls
-     * the onSelect callback with the method string.
-     */
-    function showPayMethodModal(playerName, onSelect) {
-      document.getElementById('payMethodTitle').textContent = 'Mark ' + playerName + ' as Paid';
-      pendingPayMethod = onSelect;
-      document.getElementById('payMethodModal').style.display = 'flex';
-    }
-
-    function closePayMethodModal() {
-      document.getElementById('payMethodModal').style.display = 'none';
-      pendingPayMethod = null;
-    }
+    // Payment Method Modal — REMOVED.
+    // Replaced by inline pay-method buttons in each registration row.
+    // See handlePayBtn() and executePayToggle() above.
 
 
     // ======================================================================
@@ -1354,6 +1329,60 @@
 
 
     // ======================================================================
+    // Table Sorting
+    // ======================================================================
+
+    /**
+     * Tracks the current sort state for the registration table.
+     * key: sort field name ('firstName', 'lastName'), or '' for no sort.
+     * dir: 'asc' or 'desc'.
+     */
+    var currentSort = { key: '', dir: 'asc' };
+
+    /**
+     * Handles a sortable column header click.
+     * Cycles: unsorted → asc → desc → unsorted.
+     * Re-renders the table with the new sort applied.
+     */
+    function handleSort(th) {
+      var key = th.getAttribute('data-sort');
+      if (currentSort.key === key) {
+        // Already sorting by this column — toggle direction or clear
+        if (currentSort.dir === 'asc') {
+          currentSort.dir = 'desc';
+        } else {
+          // Was desc → clear sort
+          currentSort.key = '';
+          currentSort.dir = 'asc';
+        }
+      } else {
+        // New column — start ascending
+        currentSort.key = key;
+        currentSort.dir = 'asc';
+      }
+      renderSelectedEvent();
+    }
+
+    /**
+     * Returns the CSS class suffix for a sortable <th>.
+     * Used during header rendering to show the active sort arrow.
+     */
+    function sortClass_(key) {
+      if (currentSort.key !== key) return '';
+      return currentSort.dir === 'asc' ? ' sort-asc' : ' sort-desc';
+    }
+
+    /**
+     * Extracts the sortable value from a registration object.
+     * Normalizes to lowercase string for case-insensitive sorting.
+     */
+    function getSortValue_(reg, key, is8Ball) {
+      var val = reg[key] || '';
+      return String(val).toLowerCase();
+    }
+
+
+    // ======================================================================
     // Table Rendering
     // ======================================================================
 
@@ -1424,26 +1453,38 @@
       var is8Ball = (qual.format === '8');
       var slHeader = is8Ball ? '8-Ball SL' : '9-Ball SL';
 
-      // Build table
+      // Sort registrations if a sort is active for this event
+      var sortedRegs = regs.slice(); // shallow copy to avoid mutating cache
+      if (currentSort.key) {
+        sortedRegs.sort(function(a, b) {
+          var va = getSortValue_(a, currentSort.key, is8Ball);
+          var vb = getSortValue_(b, currentSort.key, is8Ball);
+          if (va < vb) return currentSort.dir === 'asc' ? -1 : 1;
+          if (va > vb) return currentSort.dir === 'asc' ? 1 : -1;
+          return 0;
+        });
+      }
+
+      // Build table — First and Last name are separate sortable columns
       var html = detailsHtml +
         '<div class="reg-table-wrap"><table class="reg-table">' +
         '<thead><tr>' +
           '<th>Member #</th>' +
-          '<th>Player Name</th>' +
+          '<th class="sortable' + sortClass_('firstName') + '" data-sort="firstName" onclick="handleSort(this)">First</th>' +
+          '<th class="sortable' + sortClass_('lastName') + '" data-sort="lastName" onclick="handleSort(this)">Last</th>' +
           '<th>' + esc(slHeader) + '</th>' +
-          '<th>Paid</th>' +
+          '<th>Payment</th>' +
           '<th>Eligibility</th>' +
           '<th></th>' +
         '</tr></thead><tbody>';
 
-      for (var r = 0; r < regs.length; r++) {
-        var reg = regs[r];
-        var fullName = (reg.firstName + ' ' + reg.lastName).trim();
+      for (var r = 0; r < sortedRegs.length; r++) {
+        var reg = sortedRegs[r];
         var sl = is8Ball ? (reg.sl8 || '\u2014') : (reg.sl9 || '\u2014');
 
-        // Paid button state
-        var prePaidClass = (reg.prePaid === 'yes') ? 'on' : 'off';
-        var prePaidLabel = (reg.prePaid === 'yes') ? paidLabel_(reg.paymentMethod) : 'NOT PAID';
+        // Payment method buttons — 4 inline pills per row.
+        // The active method gets the 'active' class (green).
+        var paidMethod = (reg.prePaid === 'yes') ? (reg.paymentMethod || '') : '';
 
         // Eligibility circles
         var eligState = reg.eligibilityConfirmed || '';
@@ -1451,16 +1492,27 @@
         var escDate = esc(qual.dateDisplay);
         var escFmt  = esc(qual.format);
 
-        html += '<tr>' +
-          '<td>' + esc(reg.memberNumber) + '</td>' +
-          '<td>' + esc(fullName) + '</td>' +
-          '<td class="sl-cell">' + esc(sl) + '</td>' +
-          '<td><button class="toggle-btn ' + prePaidClass + '"' +
+        // Build 4 payment-method pill buttons
+        var methods = ['Cash', 'CashApp', 'Venmo', 'PayPal'];
+        var payBtnsHtml = '<div class="pay-btns">';
+        for (var mi = 0; mi < methods.length; mi++) {
+          var m = methods[mi];
+          var isActive = (paidMethod === m) ? ' active' : '';
+          payBtnsHtml += '<button class="pay-btn' + isActive + '"' +
             ' data-member="' + escMem + '"' +
             ' data-date="' + escDate + '"' +
             ' data-format="' + escFmt + '"' +
-            ' data-field="prePaid"' +
-            ' onclick="handleToggle(this)">' + prePaidLabel + '</button></td>' +
+            ' data-method="' + m + '"' +
+            ' onclick="handlePayBtn(this)">' + m + '</button>';
+        }
+        payBtnsHtml += '</div>';
+
+        html += '<tr>' +
+          '<td>' + esc(reg.memberNumber) + '</td>' +
+          '<td>' + esc(reg.firstName || '') + '</td>' +
+          '<td>' + esc(reg.lastName || '') + '</td>' +
+          '<td class="sl-cell">' + esc(sl) + '</td>' +
+          '<td>' + payBtnsHtml + '</td>' +
           '<td><div class="elig-circles">' +
             '<button class="elig-circle elig-circle-yes' + (eligState === 'eligible' ? ' elig-active' : '') + '"' +
               ' title="Eligible"' +
@@ -1739,51 +1791,65 @@
 
 
     // ======================================================================
-    // Payment Toggle Handler
+    // Payment Method Button Handler
     // ======================================================================
 
     /**
-     * Handles Paid toggle button click.
-     * UNDO (PAID -> NOT PAID): confirm modal first.
-     * FORWARD (NOT PAID -> PAID): payment method modal first.
-     * Optimistic UI update, server confirmation, rollback on failure.
+     * Handles an inline payment-method button click.
+     *
+     * Each row has 4 buttons: Cash, CashApp, Venmo, PayPal.
+     * At most ONE is active (green) at a time — the current payment method.
+     *
+     * CLICK INACTIVE BUTTON → mark paid with that method (or switch method).
+     * CLICK ACTIVE BUTTON   → confirm undo, then clear payment.
+     *
+     * Optimistic UI update; server confirmation; rollback on failure.
      */
-    function handleToggle(btn) {
-      btn.disabled = true;
+    function handlePayBtn(btn) {
+      var memberNumber  = btn.getAttribute('data-member');
+      var qualDate      = btn.getAttribute('data-date');
+      var format        = btn.getAttribute('data-format');
+      var method        = btn.getAttribute('data-method');
+      var isActive      = btn.classList.contains('active');
+      var playerName    = findPlayerName_(memberNumber);
 
-      var memberNumber = btn.getAttribute('data-member');
-      var qualDate     = btn.getAttribute('data-date');
-      var format       = btn.getAttribute('data-format');
-      var field        = btn.getAttribute('data-field');
-      var wasOn        = btn.classList.contains('on');
-      var playerName   = findPlayerName_(memberNumber);
+      // Disable all 4 buttons in this row while processing
+      var siblings = btn.parentElement.querySelectorAll('.pay-btn');
+      for (var s = 0; s < siblings.length; s++) siblings[s].disabled = true;
 
-      // UNDO: requires confirmation
-      if (wasOn) {
+      if (isActive) {
+        // UNDO: clicking the active method button → confirm, then clear
         showConfirmModal('Undo Payment', 'Undo payment for ' + playerName + '?', 'Yes, Undo', function() {
-          executeToggle(btn, memberNumber, qualDate, format, field, wasOn, '');
+          executePayToggle(btn, memberNumber, qualDate, format, '', siblings);
         });
+        // If modal is cancelled, re-enable buttons
         btn._pendingModal = true;
         return;
       }
 
-      // FORWARD: select payment method
-      showPayMethodModal(playerName, function(method) {
-        executeToggle(btn, memberNumber, qualDate, format, field, wasOn, method);
-      });
-      btn._pendingModal = true;
+      // FORWARD: mark paid (or switch method) — no confirmation needed
+      executePayToggle(btn, memberNumber, qualDate, format, method, siblings);
     }
 
     /**
-     * Executes the actual toggle after confirmation/method selection.
+     * Executes the pay toggle after optional confirmation.
+     * @param {HTMLElement} btn       - The clicked pay-method button
+     * @param {string} memberNumber   - APA member number
+     * @param {string} qualDate       - Qualifier date display string
+     * @param {string} format         - "8" or "9"
+     * @param {string} paymentMethod  - Method string, or "" to clear
+     * @param {NodeList} siblings     - All 4 pay-btn elements in this row
      */
-    async function executeToggle(btn, memberNumber, qualDate, format, field, wasOn, paymentMethod) {
-      var newIsOn = !wasOn;
+    async function executePayToggle(btn, memberNumber, qualDate, format, paymentMethod, siblings) {
+      // Snapshot previous state for rollback
+      var prevActive = btn.parentElement.querySelector('.pay-btn.active');
+      var prevMethod = prevActive ? prevActive.getAttribute('data-method') : '';
 
-      // Optimistic UI
-      btn.classList.toggle('on', newIsOn);
-      btn.classList.toggle('off', !newIsOn);
-      btn.textContent = newIsOn ? paidLabel_(paymentMethod) : 'NOT PAID';
+      // Optimistic UI: clear all active, then set the new one
+      for (var i = 0; i < siblings.length; i++) siblings[i].classList.remove('active');
+      if (paymentMethod) {
+        btn.classList.add('active');
+      }
 
       try {
         var result = await callServer('togglePrePaid', {
@@ -1794,27 +1860,23 @@
         });
 
         if (!result || !result.success) {
-          // Server rejected — revert
-          btn.classList.toggle('on', wasOn);
-          btn.classList.toggle('off', !wasOn);
-          var prevMethod = wasOn ? findPaymentMethod_(memberNumber, qualDate, format) : '';
-          btn.textContent = wasOn ? paidLabel_(prevMethod) : 'NOT PAID';
-          alert('Toggle failed: ' + ((result && result.error) || 'Unknown error'));
+          // Server rejected — revert to previous state
+          for (var j = 0; j < siblings.length; j++) siblings[j].classList.remove('active');
+          if (prevActive) prevActive.classList.add('active');
+          alert('Payment toggle failed: ' + ((result && result.error) || 'Unknown error'));
         } else {
-          // Server confirmed — update cache
-          updateCachedRegistration(memberNumber, qualDate, format, field, result.newValue);
+          // Server confirmed — update local cache
+          updateCachedRegistration(memberNumber, qualDate, format, 'prePaid', result.newValue);
           updateCachedPaymentMethod(memberNumber, qualDate, format, result.paymentMethod || '');
         }
 
       } catch (err) {
         // Network error — revert
-        btn.classList.toggle('on', wasOn);
-        btn.classList.toggle('off', !wasOn);
-        var errPrevMethod = wasOn ? findPaymentMethod_(memberNumber, qualDate, format) : '';
-        btn.textContent = wasOn ? paidLabel_(errPrevMethod) : 'NOT PAID';
-        alert('Toggle failed. Please try again.');
+        for (var k = 0; k < siblings.length; k++) siblings[k].classList.remove('active');
+        if (prevActive) prevActive.classList.add('active');
+        alert('Payment toggle failed. Please try again.');
       } finally {
-        btn.disabled = false;
+        for (var e = 0; e < siblings.length; e++) siblings[e].disabled = false;
       }
     }
 
@@ -1878,15 +1940,8 @@
       }
     }
 
-    /**
-     * Generates the PAID button label. Includes method if known.
-     */
-    function paidLabel_(method) {
-      if (method && method !== 'Unknown') {
-        return 'PAID (' + method + ')';
-      }
-      return 'PAID';
-    }
+    // paidLabel_() REMOVED — no longer needed. Each payment method has
+    // its own button, so the method is self-evident from which is active.
 
     /**
      * Looks up cached payment method for a registration.
@@ -2398,31 +2453,8 @@
         }
       });
 
-      // -- Payment method modal event wiring --
-
-      var methodButtons = document.querySelectorAll('.pay-method-btn[data-method]');
-      for (var m = 0; m < methodButtons.length; m++) {
-        methodButtons[m].addEventListener('click', function() {
-          if (pendingPayMethod) {
-            var fn = pendingPayMethod;
-            var method = this.getAttribute('data-method');
-            closePayMethodModal();
-            fn(method);
-          }
-        });
-      }
-
-      document.getElementById('payMethodCancel').addEventListener('click', function() {
-        reEnablePendingButton_();
-        closePayMethodModal();
-      });
-
-      document.getElementById('payMethodModal').addEventListener('click', function(e) {
-        if (e.target && e.target.id === 'payMethodModal') {
-          reEnablePendingButton_();
-          closePayMethodModal();
-        }
-      });
+      // Payment method modal wiring REMOVED — inline buttons handle
+      // their own click events via onclick="handlePayBtn(this)".
 
       // -- Qualifier modal backdrop click --
       document.getElementById('qualifierModal').addEventListener('click', function(e) {
@@ -2436,14 +2468,18 @@
     });
 
     /**
-     * Re-enables toggle buttons that triggered a modal (if user cancels).
+     * Re-enables pay-method buttons that triggered a confirm modal
+     * (if user cancels the undo confirmation).
      */
     function reEnablePendingButton_() {
-      var buttons = document.querySelectorAll('.toggle-btn');
+      var buttons = document.querySelectorAll('.pay-btn');
       for (var i = 0; i < buttons.length; i++) {
         if (buttons[i]._pendingModal) {
           buttons[i].disabled = false;
           buttons[i]._pendingModal = false;
+          // Also re-enable siblings (all 4 buttons in this row were disabled)
+          var siblings = buttons[i].parentElement.querySelectorAll('.pay-btn');
+          for (var s = 0; s < siblings.length; s++) siblings[s].disabled = false;
         }
       }
     }
