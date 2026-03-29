@@ -1722,6 +1722,12 @@
       }
       var hiddenCount = preFilterCount - sortedRegs.length;
 
+      // Count qualified (singles regionals) from full list
+      var qualifiedCount = 0;
+      for (var qi = 0; qi < regs.length; qi++) {
+        if (regs[qi].singlesRegionals === 'yes') qualifiedCount++;
+      }
+
       // Filter buttons — pill bar with 4 options
       function filterBtn_(id, label) {
         var cls = (activeFilter === id) ? ' active' : '';
@@ -1732,7 +1738,7 @@
           filterBtn_('all', 'All (' + preFilterCount + ')') +
           filterBtn_('unpaid', 'Unpaid (' + unpaidCount + ')') +
           filterBtn_('paid', 'Paid (' + paidCount + ')') +
-          filterBtn_('qualified', 'Qualified') +
+          filterBtn_('qualified', 'Qualified (' + qualifiedCount + ')') +
         '</div>';
 
       // Build table — First and Last name are separate sortable columns
