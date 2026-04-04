@@ -820,6 +820,20 @@
     }
 
     /* -- Qualifier cards -- */
+    /* ── Qualifier Time-Window Tabs ──────────────────────────────── */
+    .qual-filter-tabs {
+      display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 12px;
+    }
+    .qual-filter-tab {
+      background: var(--card); border: 1px solid var(--border); border-radius: 999px;
+      padding: 6px 14px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+      min-height: 36px; transition: all 0.1s; font-family: inherit;
+    }
+    .qual-filter-tab.active {
+      background: linear-gradient(135deg, var(--spm-primary), var(--spm-accent));
+      color: #fff; border-color: transparent;
+    }
+
     .qualifier-card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -827,6 +841,9 @@
       padding: 16px;
       box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
       margin-bottom: 12px;
+    }
+    .qualifier-card.past {
+      opacity: 0.7; border-left: 4px solid var(--muted);
     }
 
     .qualifier-card-header {
@@ -1143,6 +1160,9 @@
 
         <!-- Add Qualifier button -->
         <button class="add-qualifier-btn" onclick="showQualifierModal(null)">+ Add Qualifier</button>
+
+        <!-- Time-window filter tabs -->
+        <div class="qual-filter-tabs" id="qualFilterTabs"></div>
 
         <!-- Qualifier cards rendered here -->
         <div id="qualifiersList"></div>
@@ -2650,28 +2670,84 @@
      * Each card: date, format badge, time, location, cutoff, reg count,
      * edit/delete buttons.
      */
+    // ── Qualifier time-window filter ─────────────────────────────
+    var qualFilterMode = 'upcoming'; // default tab
+
+    function renderQualFilterTabs() {
+      var tabs = [
+        { key: 'upcoming', label: 'Upcoming' },
+        { key: '30',  label: '30d' },
+        { key: '60',  label: '60d' },
+        { key: '90',  label: '90d' },
+        { key: '180', label: '6mo' },
+        { key: '365', label: '12mo' },
+        { key: 'all', label: 'All' }
+      ];
+      var html = '';
+      for (var t = 0; t < tabs.length; t++) {
+        var cls = tabs[t].key === qualFilterMode ? ' active' : '';
+        html += '<button class="qual-filter-tab' + cls + '" onclick="setQualFilter(\'' + tabs[t].key + '\')">' + tabs[t].label + '</button>';
+      }
+      document.getElementById('qualFilterTabs').innerHTML = html;
+    }
+
+    function setQualFilter(mode) {
+      qualFilterMode = mode;
+      renderQualFilterTabs();
+      renderQualifiersList();
+    }
+
+    function filterQualifiers(qualifiers) {
+      var now = new Date();
+      if (qualFilterMode === 'upcoming') {
+        return qualifiers.filter(function(q) { return !q.isPast; });
+      }
+      if (qualFilterMode === 'all') return qualifiers;
+      // Past N days: show upcoming + past within the window
+      var days = parseInt(qualFilterMode, 10);
+      var cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+      return qualifiers.filter(function(q) {
+        if (!q.isPast) return true; // always show upcoming
+        // Use startISO for reliable date comparison
+        var eventDate = q.startISO ? new Date(q.startISO) : null;
+        if (!eventDate) return false;
+        return eventDate >= cutoff;
+      });
+    }
+
     function renderQualifiersList() {
       var container = document.getElementById('qualifiersList');
+      renderQualFilterTabs();
 
       if (!adminData || !adminData.qualifiers || adminData.qualifiers.length === 0) {
         container.innerHTML = '<div class="admin-empty">No qualifiers configured yet.</div>';
         return;
       }
 
+      var filtered = filterQualifiers(adminData.qualifiers);
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="admin-empty">No qualifiers match this filter.</div>';
+        return;
+      }
+
       var html = '';
-      for (var i = 0; i < adminData.qualifiers.length; i++) {
-        var q = adminData.qualifiers[i];
+      for (var i = 0; i < filtered.length; i++) {
+        var q = filtered[i];
+        // Find the original index in adminData.qualifiers for onclick references
+        var origIdx = adminData.qualifiers.indexOf(q);
         var fmtClass = q.format === '8' ? 'fmt-8' : 'fmt-9';
         var fmtLabel = q.format === '8' ? '8-Ball' : '9-Ball';
         var regCount = q.registrationCount || 0;
         var hasRegs = regCount > 0;
+        var pastClass = q.isPast ? ' past' : '';
 
         var cutoffHtml = '';
         if (q.cutoffDisplay) {
           cutoffHtml = '<div><strong>Cutoff:</strong> ' + esc(q.cutoffDisplay) + '</div>';
         }
 
-        html += '<div class="qualifier-card">' +
+        html += '<div class="qualifier-card' + pastClass + '">' +
           '<div class="qualifier-card-header">' +
             '<span class="qualifier-card-date">' + esc(q.dateDisplay) + '</span>' +
             '<span class="format-badge ' + fmtClass + '">' + esc(fmtLabel) + '</span>' +
@@ -2682,14 +2758,19 @@
             '<div>' + esc(q.locationAddress || '') + '</div>' +
             cutoffHtml +
             '<div>' + regCount + ' registration' + (regCount !== 1 ? 's' : '') + '</div>' +
-          '</div>' +
-          '<div class="qualifier-card-actions">' +
-            '<button class="qual-edit-btn" onclick="showQualifierModal(adminData.qualifiers[' + i + '])">Edit</button>' +
-            '<button class="qual-delete-btn"' +
-              (hasRegs ? ' disabled title="Cannot delete \u2014 has ' + regCount + ' registration' + (regCount !== 1 ? 's' : '') + '"' : '') +
-              ' onclick="handleDeleteQualifier(\'' + esc(q.dateDisplay) + '\', \'' + esc(q.format) + '\')">Delete</button>' +
-          '</div>' +
-        '</div>';
+          '</div>';
+
+        // Past qualifiers: read-only (no edit/delete)
+        if (!q.isPast) {
+          html += '<div class="qualifier-card-actions">' +
+              '<button class="qual-edit-btn" onclick="showQualifierModal(adminData.qualifiers[' + origIdx + '])">Edit</button>' +
+              '<button class="qual-delete-btn"' +
+                (hasRegs ? ' disabled title="Cannot delete \u2014 has ' + regCount + ' registration' + (regCount !== 1 ? 's' : '') + '"' : '') +
+                ' onclick="handleDeleteQualifier(\'' + esc(q.dateDisplay) + '\', \'' + esc(q.format) + '\')">Delete</button>' +
+            '</div>';
+        }
+
+        html += '</div>';
       }
 
       container.innerHTML = html;
